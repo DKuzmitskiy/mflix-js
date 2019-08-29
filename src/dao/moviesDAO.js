@@ -204,6 +204,9 @@ export default class MoviesDAO {
       sortStage,
       // TODO Ticket: Faceted Search
       // Add the stages to queryPipeline in the correct order.
+      skipStage,
+      limitStage,
+      facetStage,
     ]
 
     try {
@@ -267,7 +270,7 @@ export default class MoviesDAO {
 
     // TODO Ticket: Paging
     // Use the cursor to only return the movies that belong on the current page
-    const displayCursor = cursor.limit(moviesPerPage)
+    const displayCursor = cursor.limit(moviesPerPage).skip(page * moviesPerPage)
 
     try {
       const moviesList = await displayCursor.toArray()
@@ -305,6 +308,36 @@ export default class MoviesDAO {
         {
           $match: {
             _id: ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: "comments",
+            localField: "_id",
+            foreignField: "movie_id",
+            as: "comments",
+          },
+        },
+        // This doesn't work properly!!!!!
+        //   {
+        //   $lookup: {
+        //     from: 'comments',
+        //     let: {id: '_id'},
+        //     pipeline: [
+        //       {
+        //         $match: {
+        //           $expr:  {
+        //             $eq: [ '$movie_id', '$$id' ],
+        //           }
+        //         }
+        //       }
+        //     ],
+        //     as: 'comments'
+        //   }
+        // },
+        {
+          $sort: {
+            date: -1,
           },
         },
       ]
